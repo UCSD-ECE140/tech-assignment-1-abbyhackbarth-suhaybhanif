@@ -14,8 +14,13 @@
 # limitations under the License.
 #
 import time
+import matplotlib
+from matplotlib import pyplot as plt
 import paho.mqtt.client as paho
 from paho import mqtt
+
+publisher0_data = []
+publisher1_data = []
 
 # setting callbacks for different events to see if it works, print the message etc.
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -61,13 +66,26 @@ def on_message(client, userdata, msg):
         :param msg: the message with topic and payload
     """
     print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
+    if msg.topic == "encyclopedia/publisher0": publisher0_data.append(int(msg.payload)) # Store data into array
+    if msg.topic == "encyclopedia/publisher1": publisher1_data.append(int(msg.payload)) # Store data into array
+    plot_data()
+
+def plot_data():
+    plt.clf()  # Clear previous plot
+    plt.plot(publisher0_data, label = "publisher0")
+    plt.plot(publisher1_data, label = "publisher1")
+
+    plt.title("Subscription Data Points")
+    plt.xlabel("Time")
+    plt.ylabel("Integer")
+    plt.legend()
+    plt.pause(0.1) # Update plot w/ new data points
 
 # using MQTT version 5 here, for 3.1.1: MQTTv311, 3.1: MQTTv31
 # userdata is user defined data of any type, updated by user_data_set()
 # client_id is the given name of the client
-client = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="client1", userdata=None, protocol=paho.MQTTv5)
+client = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="", userdata=None, protocol=paho.MQTTv5)
 client.on_connect = on_connect
-
 client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS) # enable TLS for secure connection
 client.username_pw_set("ECE140B@UCSD_a", "ECE140B@UCSD_a") # set username and password
 client.connect("bafbaa82610143e7a16aff0fd364edbe.s1.eu.hivemq.cloud", 8883) # connect to HiveMQ Cloud on port 8883 (default for MQTT)
@@ -75,15 +93,11 @@ client.connect("bafbaa82610143e7a16aff0fd364edbe.s1.eu.hivemq.cloud", 8883) # co
 # setting callbacks, use separate functions like above for better visibility
 client.on_subscribe = on_subscribe
 client.on_message = on_message
-client.on_publish = on_publish
 
-i = 0
-client.loop_start()
-while True:
-  i = i + 1
-  client.publish("encyclopedia/publisher1", payload="i", qos=1) # a single publish, this can also be done in loops, etc.
-  time.sleep(3)
-client.loop_start()
-# loop_forever for simplicity, here you need to stop the loop manually
-# you can also use loop_start and loop_stop
-# client.loop_forever()
+# subscribe to all topics of encyclopedia by using the wildcard "#"
+client.subscribe("encyclopedia/#", qos=1)
+
+client.loop_forever()
+
+while True: # Keep matlab script running
+    pass

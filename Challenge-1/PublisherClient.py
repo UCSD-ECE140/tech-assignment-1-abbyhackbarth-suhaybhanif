@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 import time
+import random
 import paho.mqtt.client as paho
 from paho import mqtt
 
@@ -65,25 +66,36 @@ def on_message(client, userdata, msg):
 # using MQTT version 5 here, for 3.1.1: MQTTv311, 3.1: MQTTv31
 # userdata is user defined data of any type, updated by user_data_set()
 # client_id is the given name of the client
-client = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="client2", userdata=None, protocol=paho.MQTTv5)
-client.on_connect = on_connect
+client0 = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="Client0", userdata=None, protocol=paho.MQTTv5)
+client0.on_connect = on_connect
+client0.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS) # enable TLS for secure connection
+client0.username_pw_set("ECE140B@UCSD_a", "ECE140B@UCSD_a") # set username and password
+client0.connect("bafbaa82610143e7a16aff0fd364edbe.s1.eu.hivemq.cloud", 8883) # connect to HiveMQ Cloud on port 8883 (default for MQTT)
 
-client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS) # enable TLS for secure connection
-client.username_pw_set("ECE140B@UCSD_a", "ECE140B@UCSD_a") # set username and password
-client.connect("bafbaa82610143e7a16aff0fd364edbe.s1.eu.hivemq.cloud", 8883) # connect to HiveMQ Cloud on port 8883 (default for MQTT)
+client1 = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="Client1", userdata=None, protocol=paho.MQTTv5)
+client1.on_connect = on_connect
+client1.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS) # enable TLS for secure connection
+client1.username_pw_set("ECE140B@UCSD_a", "ECE140B@UCSD_a") # set username and password
+client1.connect("bafbaa82610143e7a16aff0fd364edbe.s1.eu.hivemq.cloud", 8883) # connect to HiveMQ Cloud on port 8883 (default for MQTT)
 
 # setting callbacks, use separate functions like above for better visibility
-client.on_subscribe = on_subscribe
-client.on_message = on_message
-client.on_publish = on_publish
+client0.on_subscribe = on_subscribe
+client0.on_publish = on_publish
 
-i = 0
-client.loop_start()
+client1.on_subscribe = on_subscribe
+client1.on_publish = on_publish
+
+client0.loop_start()
+client1.loop_start()
+
 while True:
-  i = i + 1
-  client.publish("encyclopedia/publisher2", payload="i", qos=1) # a single publish, this can also be done in loops, etc.
-  time.sleep(3)
-client.loop_start()
-# loop_forever for simplicity, here you need to stop the loop manually
-# you can also use loop_start and loop_stop
-# client.loop_forever()
+    rand0 = str(random.randint(-1000,1000)) # Generate random integer between -1000 and 1000
+    client0.publish("encyclopedia/publisher0", payload=rand0, qos=1)
+
+    rand1 = str(random.randint(-1000,1000)) # Generate random integer between -1000 and 1000
+    client1.publish("encyclopedia/publisher1", payload=rand1, qos=1)
+
+    time.sleep(3) # 3 second delay
+
+client0.loop_stop()
+client1.loop_stop()
