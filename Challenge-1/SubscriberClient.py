@@ -13,11 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
 import time
 import matplotlib
 from matplotlib import pyplot as plt
 import paho.mqtt.client as paho
 from paho import mqtt
+from dotenv import load_dotenv
 
 publisher0_data = []
 publisher1_data = []
@@ -81,14 +83,21 @@ def plot_data():
     plt.legend()
     plt.pause(0.1) # Update plot w/ new data points
 
+load_dotenv(dotenv_path='./credentials.env')
+    
+broker_address = os.environ.get('BROKER_ADDRESS')
+broker_port = int(os.environ.get('BROKER_PORT'))
+username = os.environ.get('USER_NAME')
+password = os.environ.get('PASSWORD')
+
 # using MQTT version 5 here, for 3.1.1: MQTTv311, 3.1: MQTTv31
 # userdata is user defined data of any type, updated by user_data_set()
 # client_id is the given name of the client
 client = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="", userdata=None, protocol=paho.MQTTv5)
 client.on_connect = on_connect
 client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS) # enable TLS for secure connection
-client.username_pw_set("ECE140B@UCSD_a", "ECE140B@UCSD_a") # set username and password
-client.connect("bafbaa82610143e7a16aff0fd364edbe.s1.eu.hivemq.cloud", 8883) # connect to HiveMQ Cloud on port 8883 (default for MQTT)
+client.username_pw_set(username, password) # set username and password
+client.connect(broker_address, broker_port) # connect to HiveMQ Cloud on port 8883 (default for MQTT)
 
 # setting callbacks, use separate functions like above for better visibility
 client.on_subscribe = on_subscribe
