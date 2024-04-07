@@ -126,7 +126,6 @@ class Game:
             scores[teamName] = team.score
         return scores
 
-
 if __name__ == '__main__':
     random.seed(1)
     g = Game({'TeamA': ['Charles', 'Girish'], 'TeamB': ['James']})
