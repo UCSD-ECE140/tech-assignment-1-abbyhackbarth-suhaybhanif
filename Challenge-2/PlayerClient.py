@@ -6,7 +6,6 @@ import paho.mqtt.client as paho
 from paho import mqtt
 import time
 
-
 # setting callbacks for different events to see if it works, print the message etc.
 def on_connect(client, userdata, flags, rc, properties=None):
     """
@@ -19,7 +18,6 @@ def on_connect(client, userdata, flags, rc, properties=None):
     """
     print("CONNACK received with code %s." % rc)
 
-
 # with this callback you can see if your publish was successful
 def on_publish(client, userdata, mid, properties=None):
     """
@@ -30,7 +28,6 @@ def on_publish(client, userdata, mid, properties=None):
         :param properties: can be used in MQTTv5, but is optional
     """
     print("mid: " + str(mid))
-
 
 # print which topic was subscribed to
 def on_subscribe(client, userdata, mid, granted_qos, properties=None):
@@ -44,7 +41,6 @@ def on_subscribe(client, userdata, mid, granted_qos, properties=None):
     """
     print("Subscribed: " + str(mid) + " " + str(granted_qos))
 
-
 # print message, useful for checking if it was successful
 def on_message(client, userdata, msg):
     """
@@ -55,7 +51,6 @@ def on_message(client, userdata, msg):
     """
 
     print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
-
 
 if __name__ == '__main__':
     load_dotenv(dotenv_path='./credentials.env')
@@ -106,6 +101,5 @@ if __name__ == '__main__':
     client.publish(f"games/{lobby_name}/{player_2}/move", "DOWN")
     client.publish(f"games/{lobby_name}/{player_3}/move", "DOWN")
     client.publish(f"games/{lobby_name}/start", "STOP")
-
 
     client.loop_forever()
