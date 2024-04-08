@@ -11,6 +11,8 @@ from InputTypes import NewPlayer
 from game import Game
 from moveset import Moveset
 
+isGameStarted = False
+
 # setting callbacks for different events to see if it works, print the message etc.
 def on_connect(client, userdata, flags, rc, properties=None):
     """
@@ -60,6 +62,9 @@ def on_message(client, userdata, msg):
     # Validate it is input we can deal with
     if topic_list[-1] in dispatch.keys(): 
         dispatch[topic_list[-1]](client, topic_list, msg.payload)
+    
+    if msg.topic == "games/{lobby_name}/start" and str(msg.payload) == "START": isGameStarted = True
+    print(game.map)
 
 # Dispatched function, adds player to a lobby & team
 def add_player(client, topic_list, msg_payload):
@@ -201,5 +206,9 @@ if __name__ == '__main__':
     client.subscribe("new_game")
     client.subscribe('games/+/start')
     client.subscribe('games/+/+/move')
+    
+    if isGameStarted == True: 
+        print("hih")
+        print(game.map)
 
     client.loop_forever()

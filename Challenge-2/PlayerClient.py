@@ -6,6 +6,8 @@ import paho.mqtt.client as paho
 from paho import mqtt
 import time
 
+isGameValid = True
+
 # setting callbacks for different events to see if it works, print the message etc.
 def on_connect(client, userdata, flags, rc, properties=None):
     """
@@ -49,6 +51,7 @@ def on_message(client, userdata, msg):
         :param userdata: userdata is set when initiating the client, here it is userdata=None
         :param msg: the message with topic and payload
     """
+    if msg.topic == "games/{lobby_name}/+/game_state": isGameValid = msg.payload
 
     print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
 
@@ -61,45 +64,62 @@ if __name__ == '__main__':
     password = os.environ.get('PASSWORD')
 
     client = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="Player1", userdata=None, protocol=paho.MQTTv5)
-    
-    # enable TLS for secure connection
-    client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
-    # set username and password
-    client.username_pw_set(username, password)
-    # connect to HiveMQ Cloud on port 8883 (default for MQTT)
-    client.connect(broker_address, broker_port)
+    client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS) # enable TLS for secure connection
+    client.username_pw_set(username, password)  # set username and password
+    client.connect(broker_address, broker_port) # connect to HiveMQ Cloud on port 8883 (default for MQTT)
 
-    # setting callbacks, use separate functions like above for better visibility
     client.on_subscribe = on_subscribe # Can comment out to not print when subscribing to new topics
     client.on_message = on_message
     client.on_publish = on_publish # Can comment out to not print when publishing to topics
 
-    lobby_name = "TestLobby"
-    player_1 = "Player1"
-    player_2 = "Player2"
-    player_3 = "Player3"
+    lobby_name   = input("Input a lobby name: ")
+    # team_name_1   = input("Input Team 1 name: ")
+    # player_1a     = input("Input team " + team_name_1 + "'s player 1 name: ")
+    # player_1b     = input("Input team " + team_name_1 + "'s player 2 name: ")
+    # team_name_2   = input("Input Team 2 name: ")
+    # player_2a     = input("Input team " + team_name_2 + "'s player 1 name: ")
+    # player_2b     = input("Input team " + team_name_2 + "'s player 2 name: ")
 
     client.subscribe(f"games/{lobby_name}/lobby")
     client.subscribe(f'games/{lobby_name}/+/game_state')
     client.subscribe(f'games/{lobby_name}/scores')
 
-    client.publish("new_game", json.dumps({'lobby_name':lobby_name,
-                                            'team_name':'ATeam',
-                                            'player_name' : player_1}))
+    # Two teams of two
+
+    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
+                                           'team_name'   : 'TeamA',
+                                           'player_name' : 'a'}))
+                                           
+    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
+                                           'team_name'   : 'TeamA',
+                                           'player_name' : 'b'}))
+
+    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
+                                           'team_name'   : 'TeamB',
+                                           'player_name' : 'aa'}))
     
-    client.publish("new_game", json.dumps({'lobby_name':lobby_name,
-                                            'team_name':'BTeam',
-                                            'player_name' : player_2}))
-    
-    client.publish("new_game", json.dumps({'lobby_name':lobby_name,
-                                        'team_name':'BTeam',
-                                        'player_name' : player_3}))
+    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
+                                           'team_name'   : 'TeamB',
+                                           'player_name' : 'bb'}))
 
     time.sleep(1) # Wait a second to resolve game start
+
     client.publish(f"games/{lobby_name}/start", "START")
-    client.publish(f"games/{lobby_name}/{player_1}/move", "UP")
-    client.publish(f"games/{lobby_name}/{player_2}/move", "DOWN")
-    client.publish(f"games/{lobby_name}/{player_3}/move", "DOWN")
-    client.publish(f"games/{lobby_name}/start", "STOP")
+
+    i = 1 # Initalize variable that will help us cycle through each player
+
+    while(isGameValid): # currently, an infinite loop TODO: add function to check if game is still valid on GameClient end
+        if i > 4: i = 1 # reset to the first player when player 4 is finished
+        if i == 1: current_player = 'a' # Set which player we are currently on based on counter
+        if i == 2: current_player = 'b'
+        if i == 3: current_player = 'aa'
+        if i == 4: current_player = 'bb'
+
+        player_move = input(current_player + ", make your move: ") # take in move
+        client.publish("games/{lobby_name}/{current_player}/move", player_move) # publish this move to desired player
+
+        i = i + 1 # move to next player
+
+    client.publish("games/{lobby_name}/start", "STOP") # Stop the game. Currently, will never reach this stage
 
     client.loop_forever()
