@@ -35,7 +35,6 @@ def on_publish(client, userdata, mid, properties=None):
         :param properties: can be used in MQTTv5, but is optional
     """
     print("mid: " + str(mid))
-    print("on_publish")
 
 # print which topic was subscribed to
 def on_subscribe(client, userdata, mid, granted_qos, properties=None):
@@ -57,7 +56,6 @@ def on_message(client, userdata, msg):
         :param userdata: userdata is set when initiating the client, here it is userdata=None
         :param msg: the message with topic and payload
     """
-    print("on_message")
     print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
     topic_list = msg.topic.split("/")
 
@@ -65,15 +63,8 @@ def on_message(client, userdata, msg):
     if topic_list[-1] in dispatch.keys(): 
         dispatch[topic_list[-1]](client, topic_list, msg.payload)
     
-    if msg.topic == "games/TestLobby/start" and msg.payload == b'START':
-        print("Game has started.")
-        isGameStarted = True
-
-    if msg.topic == "games/TestLobby/start" and msg.payload == b'FALSE':
-        print("Game has ended.")
-        isGameStarted = False
-
-    print(msg.topic)
+    if msg.topic == "games/{lobby_name}/start" and str(msg.payload) == "START": isGameStarted = True
+    print(game.map)
 
 # Dispatched function, adds player to a lobby & team
 def add_player(client, topic_list, msg_payload):
@@ -113,7 +104,6 @@ move_to_Moveset = {
 
 # Dispatched Function: handles player movement commands
 def player_move(client, topic_list, msg_payload):
-    print("In player_move")
     lobby_name = topic_list[1]
     player_name = topic_list[2]
     if lobby_name in client.team_dict.keys():
@@ -216,8 +206,9 @@ if __name__ == '__main__':
     client.subscribe("new_game")
     client.subscribe('games/+/start')
     client.subscribe('games/+/+/move')
-
-    while(isGameStarted):
-        print("Game is valid.")
+    
+    if isGameStarted == True: 
+        print("hih")
         print(game.map)
+
     client.loop_forever()

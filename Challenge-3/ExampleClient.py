@@ -1,12 +1,21 @@
-import os
-import json
-from dotenv import load_dotenv
-
+#
+# Copyright 2021 HiveMQ GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+import time
 import paho.mqtt.client as paho
 from paho import mqtt
-import time
-
-isGameValid = True
 
 # setting callbacks for different events to see if it works, print the message etc.
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -51,47 +60,32 @@ def on_message(client, userdata, msg):
         :param userdata: userdata is set when initiating the client, here it is userdata=None
         :param msg: the message with topic and payload
     """
-    if msg.topic == "games/{lobby_name}/+/game_state": isGameValid = msg.payload
+    print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
 
-    print("In on_message")
+# using MQTT version 5 here, for 3.1.1: MQTTv311, 3.1: MQTTv31
+# userdata is user defined data of any type, updated by user_data_set()
+# client_id is the given name of the client
+client = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="", userdata=None, protocol=paho.MQTTv5)
+client.on_connect = on_connect
 
-    print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
+# enable TLS for secure connection
+client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
+# set username and password
+client.username_pw_set("{YOUR USERNAME}", "{YOUR PASSWORD}")
+# connect to HiveMQ Cloud on port 8883 (default for MQTT)
+client.connect("{YOUR URL}", 8883)
 
-if __name__ == '__main__':
-    load_dotenv(dotenv_path='./credentials.env')
-    
-    broker_address = os.environ.get('BROKER_ADDRESS')
-    broker_port = int(os.environ.get('BROKER_PORT'))
-    username = os.environ.get('USER_NAME')
-    password = os.environ.get('PASSWORD')
+# setting callbacks, use separate functions like above for better visibility
+client.on_subscribe = on_subscribe
+client.on_message = on_message
+client.on_publish = on_publish
 
-    client = paho.Client(callback_api_version=paho.CallbackAPIVersion.VERSION1, client_id="Player1", userdata=None, protocol=paho.MQTTv5)
-    client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS) # enable TLS for secure connection
-    client.username_pw_set(username, password)  # set username and password
-    client.connect(broker_address, broker_port) # connect to HiveMQ Cloud on port 8883 (default for MQTT)
+# subscribe to all topics of encyclopedia by using the wildcard "#"
+client.subscribe("encyclopedia/#", qos=1)
 
-    client.on_subscribe = on_subscribe # Can comment out to not print when subscribing to new topics
-    client.on_message = on_message
-    client.on_publish = on_publish # Can comment out to not print when publishing to topics
+# a single publish, this can also be done in loops, etc.
+client.publish("encyclopedia/temperature", payload="hot", qos=1)
 
-    player_1   = input("Input your name: ")
-    lobby_name = 'TestLobby'
-
-    client.subscribe(f"games/{lobby_name}/lobby")
-    client.subscribe(f'games/{lobby_name}/+/game_state')
-    client.subscribe(f'games/{lobby_name}/scores')
-
-    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
-                                           'team_name'   : 'TeamA',
-                                           'player_name' : player_1}))
-                                           
-    time.sleep(1) # Wait a second to resolve game start
-    client.publish(f"games/{lobby_name}/start", "START")
-
-    while(isGameValid): # currently, an infinite loop TODO: add function to check if game is still valid on GameClient end
-        player_move = input(player_1 + ", make your move: ") # take in move
-        client.publish("games/{lobby_name}/{player_1}/move", str(player_move)) # publish this move to desired player
-
-    client.publish("games/{lobby_name}/start", "STOP") # Stop the game. Currently, will never reach this stage
-
-    client.loop_forever()
+# loop_forever for simplicity, here you need to stop the loop manually
+# you can also use loop_start and loop_stop
+client.loop_forever()

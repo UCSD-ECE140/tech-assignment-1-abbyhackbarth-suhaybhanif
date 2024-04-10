@@ -53,8 +53,6 @@ def on_message(client, userdata, msg):
     """
     if msg.topic == "games/{lobby_name}/+/game_state": isGameValid = msg.payload
 
-    print("In on_message")
-
     print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
 
 if __name__ == '__main__':
@@ -74,23 +72,53 @@ if __name__ == '__main__':
     client.on_message = on_message
     client.on_publish = on_publish # Can comment out to not print when publishing to topics
 
-    player_1   = input("Input your name: ")
-    lobby_name = 'TestLobby'
+    lobby_name   = input("Input a lobby name: ")
+    # team_name_1   = input("Input Team 1 name: ")
+    # player_1a     = input("Input team " + team_name_1 + "'s player 1 name: ")
+    # player_1b     = input("Input team " + team_name_1 + "'s player 2 name: ")
+    # team_name_2   = input("Input Team 2 name: ")
+    # player_2a     = input("Input team " + team_name_2 + "'s player 1 name: ")
+    # player_2b     = input("Input team " + team_name_2 + "'s player 2 name: ")
 
     client.subscribe(f"games/{lobby_name}/lobby")
     client.subscribe(f'games/{lobby_name}/+/game_state')
     client.subscribe(f'games/{lobby_name}/scores')
 
+    # Two teams of two
+
     client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
                                            'team_name'   : 'TeamA',
-                                           'player_name' : player_1}))
+                                           'player_name' : 'a'}))
                                            
+    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
+                                           'team_name'   : 'TeamA',
+                                           'player_name' : 'b'}))
+
+    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
+                                           'team_name'   : 'TeamB',
+                                           'player_name' : 'aa'}))
+    
+    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
+                                           'team_name'   : 'TeamB',
+                                           'player_name' : 'bb'}))
+
     time.sleep(1) # Wait a second to resolve game start
+
     client.publish(f"games/{lobby_name}/start", "START")
 
+    i = 1 # Initalize variable that will help us cycle through each player
+
     while(isGameValid): # currently, an infinite loop TODO: add function to check if game is still valid on GameClient end
-        player_move = input(player_1 + ", make your move: ") # take in move
-        client.publish("games/{lobby_name}/{player_1}/move", str(player_move)) # publish this move to desired player
+        if i > 4: i = 1 # reset to the first player when player 4 is finished
+        if i == 1: current_player = 'a' # Set which player we are currently on based on counter
+        if i == 2: current_player = 'b'
+        if i == 3: current_player = 'aa'
+        if i == 4: current_player = 'bb'
+
+        player_move = input(current_player + ", make your move: ") # take in move
+        client.publish("games/{lobby_name}/{current_player}/move", player_move) # publish this move to desired player
+
+        i = i + 1 # move to next player
 
     client.publish("games/{lobby_name}/start", "STOP") # Stop the game. Currently, will never reach this stage
 
