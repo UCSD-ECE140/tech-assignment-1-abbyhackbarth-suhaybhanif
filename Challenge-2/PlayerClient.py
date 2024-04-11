@@ -77,7 +77,6 @@ if __name__ == '__main__':
     client.subscribe(f"games/{lobby_name}/lobby")
     client.subscribe(f'games/{lobby_name}/+/game_state')
     client.subscribe(f'games/{lobby_name}/scores')
-    client.subscribe(f'games/{lobby_name}/{player_name}/localized_grid')
 
     client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
                                            'team_name'   : 'TeamA',
