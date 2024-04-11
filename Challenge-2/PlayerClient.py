@@ -5,8 +5,7 @@ from dotenv import load_dotenv
 import paho.mqtt.client as paho
 from paho import mqtt
 import time
-
-isGameValid = True
+import threading
 
 # setting callbacks for different events to see if it works, print the message etc.
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -51,9 +50,7 @@ def on_message(client, userdata, msg):
         :param userdata: userdata is set when initiating the client, here it is userdata=None
         :param msg: the message with topic and payload
     """
-    if msg.topic == "games/{lobby_name}/+/game_state": isGameValid = msg.payload
-
-    print("In on_message")
+    print("Player in on_message")
 
     print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
 
@@ -72,26 +69,29 @@ if __name__ == '__main__':
 
     client.on_subscribe = on_subscribe # Can comment out to not print when subscribing to new topics
     client.on_message = on_message
-    client.on_publish = on_publish # Can comment out to not print when publishing to topics
+    #client.on_publish = on_publish # Can comment out to not print when publishing to topics
 
-    player_1   = input("Input your name: ")
-    lobby_name = 'TestLobby'
+    player_name = input("Input your name: ")
+    lobby_name  = "TestLobby"
 
     client.subscribe(f"games/{lobby_name}/lobby")
     client.subscribe(f'games/{lobby_name}/+/game_state')
     client.subscribe(f'games/{lobby_name}/scores')
+    client.subscribe(f'games/{lobby_name}/{player_name}/localized_grid')
 
     client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
                                            'team_name'   : 'TeamA',
-                                           'player_name' : player_1}))
-                                           
+                                           'player_name' : player_name}))
+
     time.sleep(1) # Wait a second to resolve game start
     client.publish(f"games/{lobby_name}/start", "START")
-
-    while(isGameValid): # currently, an infinite loop TODO: add function to check if game is still valid on GameClient end
-        player_move = input(player_1 + ", make your move: ") # take in move
-        client.publish("games/{lobby_name}/{player_1}/move", str(player_move)) # publish this move to desired player
-
-    client.publish("games/{lobby_name}/start", "STOP") # Stop the game. Currently, will never reach this stage
+    
+    time.sleep(1) # Wait a second to resolve game start
+    while(True):
+        player_move = input(player_name + ", make your move: ") # take in move
+        client.publish(f"games/{lobby_name}/{player_name}/move", str(player_move))
+        time.sleep(1) # Wait a second to resolve game start
+    #client.publish("games/{lobby_name}/start", "STOP") # Stop the game. Currently, will never reach this stage
 
     client.loop_forever()
+    

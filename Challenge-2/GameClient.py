@@ -117,6 +117,7 @@ def player_move(client, topic_list, msg_payload):
     lobby_name = topic_list[1]
     player_name = topic_list[2]
     if lobby_name in client.team_dict.keys():
+        print("Attempting to calculate move...")
         try:
             new_move = msg_payload.decode()
 
@@ -131,7 +132,7 @@ def player_move(client, topic_list, msg_payload):
                 # Publish player states after all movement is resolved
                 for player, _ in client.move_dict[lobby_name].values():
                     client.publish(f'games/{lobby_name}/{player}/game_state', json.dumps(game.getGameData(player)))
-
+                
                 # Clear move list
                 client.move_dict[lobby_name].clear()
                 print(game.map)
@@ -217,7 +218,4 @@ if __name__ == '__main__':
     client.subscribe('games/+/start')
     client.subscribe('games/+/+/move')
 
-    while(isGameStarted):
-        print("Game is valid.")
-        print(game.map)
     client.loop_forever()
