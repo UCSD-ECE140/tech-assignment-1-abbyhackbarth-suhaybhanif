@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 import paho.mqtt.client as paho
 from paho import mqtt
 import time
-import threading
+
+isGameValid = True
 
 # setting callbacks for different events to see if it works, print the message etc.
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -53,6 +54,9 @@ def on_message(client, userdata, msg):
     print("Player in on_message")
 
     print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
+    #if (msg.topic == f'games/{lobby_name}/lobby' and str(msg.payload) == "Game Over: All coins have been collected"):
+    if (msg.topic == f'games/{lobby_name}/lobby' and str(msg.payload) == "Game Over: All coins have been collected"):
+        isGameValid = False
 
 if __name__ == '__main__':
     load_dotenv(dotenv_path='./credentials.env')
@@ -66,6 +70,7 @@ if __name__ == '__main__':
     client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS) # enable TLS for secure connection
     client.username_pw_set(username, password)  # set username and password
     client.connect(broker_address, broker_port) # connect to HiveMQ Cloud on port 8883 (default for MQTT)
+    client.loop_start()
 
     client.on_subscribe = on_subscribe # Can comment out to not print when subscribing to new topics
     client.on_message = on_message
@@ -83,14 +88,13 @@ if __name__ == '__main__':
                                            'team_name'   : 'TeamA',
                                            'player_name' : player_name}))
 
-    time.sleep(1) # Wait a second to resolve game start
     client.publish(f"games/{lobby_name}/start", "START")
     
     time.sleep(1) # Wait a second to resolve game start
-    while(True):
+    while(isGameValid):
         player_move = input(player_name + ", make your move: ") # take in move
         client.publish(f"games/{lobby_name}/{player_name}/move", str(player_move))
         time.sleep(1) # Wait a second to resolve game start
     #client.publish("games/{lobby_name}/start", "STOP") # Stop the game. Currently, will never reach this stage
 
-    client.loop_forever()
+    client.loop_start()
