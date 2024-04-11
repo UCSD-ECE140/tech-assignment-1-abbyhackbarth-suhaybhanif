@@ -71,8 +71,9 @@ if __name__ == '__main__':
     client.on_message = on_message
     #client.on_publish = on_publish # Can comment out to not print when publishing to topics
 
-    player_name = input("Input your name: ")
+    #player_name = input("Input your name: ")
     lobby_name  = "TestLobby"
+    player_name = "abby"
 
     client.subscribe(f"games/{lobby_name}/lobby")
     client.subscribe(f'games/{lobby_name}/+/game_state')
@@ -93,4 +94,3 @@ if __name__ == '__main__':
     #client.publish("games/{lobby_name}/start", "STOP") # Stop the game. Currently, will never reach this stage
 
     client.loop_forever()
-    

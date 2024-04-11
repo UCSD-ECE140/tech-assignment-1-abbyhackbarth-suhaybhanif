@@ -11,8 +11,6 @@ from InputTypes import NewPlayer
 from game import Game
 from moveset import Moveset
 
-isGameStarted = False
-
 # setting callbacks for different events to see if it works, print the message etc.
 def on_connect(client, userdata, flags, rc, properties=None):
     """
@@ -35,7 +33,6 @@ def on_publish(client, userdata, mid, properties=None):
         :param properties: can be used in MQTTv5, but is optional
     """
     print("mid: " + str(mid))
-    print("on_publish")
 
 # print which topic was subscribed to
 def on_subscribe(client, userdata, mid, granted_qos, properties=None):
@@ -57,23 +54,12 @@ def on_message(client, userdata, msg):
         :param userdata: userdata is set when initiating the client, here it is userdata=None
         :param msg: the message with topic and payload
     """
-    print("on_message")
     print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
     topic_list = msg.topic.split("/")
 
     # Validate it is input we can deal with
     if topic_list[-1] in dispatch.keys(): 
         dispatch[topic_list[-1]](client, topic_list, msg.payload)
-    
-    if msg.topic == "games/TestLobby/start" and msg.payload == b'START':
-        print("Game has started.")
-        isGameStarted = True
-
-    if msg.topic == "games/TestLobby/start" and msg.payload == b'FALSE':
-        print("Game has ended.")
-        isGameStarted = False
-
-    print(msg.topic)
 
 # Dispatched function, adds player to a lobby & team
 def add_player(client, topic_list, msg_payload):
@@ -207,7 +193,7 @@ if __name__ == '__main__':
     # setting callbacks, use separate functions like above for better visibility
     client.on_subscribe = on_subscribe # Can comment out to not print when subscribing to new topics
     client.on_message = on_message
-    client.on_publish = on_publish # Can comment out to not print when publishing to topics
+    #client.on_publish = on_publish # Can comment out to not print when publishing to topics
     
     # custom dictionary to track players
     client.team_dict = {} # Keeps tracks of players before a game starts {'lobby_name' : {'team_name' : [player_name, ...]}}
