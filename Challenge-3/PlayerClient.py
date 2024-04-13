@@ -5,8 +5,10 @@ from dotenv import load_dotenv
 import paho.mqtt.client as paho
 from paho import mqtt
 import time
+import random #used to "decide" moves for the bots
 
 isGameValid = True
+lobby_name  = "Challenge3Lobby"
 
 # setting callbacks for different events to see if it works, print the message etc.
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -51,9 +53,31 @@ def on_message(client, userdata, msg):
         :param userdata: userdata is set when initiating the client, here it is userdata=None
         :param msg: the message with topic and payload
     """
-    if msg.topic == "games/{lobby_name}/+/game_state": isGameValid = msg.payload
-
+    print("Player in on_message")
+    global isGameValid #python treats isGameValid in function as local unless you add Gloabl
+    global lobby_name
     print("message: " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
+    #if (msg.topic == f'games/{lobby_name}/lobby' and str(msg.payload) == "Game Over: All coins have been collected"):
+    #i don't think this behaves properl, never hits.
+    if (msg.topic == f'games/{lobby_name}/lobby' and str(msg.payload) == "Game Over: All coins have been collected"):
+        isGameValid = False
+    
+    #end the loop if Game Over detected, this one does seem to work
+    if isinstance(msg.payload, bytes) and "Game Over" in msg.payload.decode():
+        print("Game is Over, Lobby no longer exists")
+        isGameValid = False
+    
+
+def moveGen():
+    moveNum = random.randrange(1,5) #returns a number betwen 1(included) and 5(not included). want 1-4 so this works.
+    if moveNum == 1:
+        return "UP"
+    if moveNum == 2:
+        return "LEFT"
+    if moveNum == 3:
+        return "DOWN"
+    if moveNum == 4:
+        return "RIGHT"
 
 if __name__ == '__main__':
     load_dotenv(dotenv_path='./credentials.env')
@@ -67,59 +91,63 @@ if __name__ == '__main__':
     client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS) # enable TLS for secure connection
     client.username_pw_set(username, password)  # set username and password
     client.connect(broker_address, broker_port) # connect to HiveMQ Cloud on port 8883 (default for MQTT)
+    client.loop_start() #NEED loop_start() after connect, loop_forever() doesn't behave how we want it.
 
     client.on_subscribe = on_subscribe # Can comment out to not print when subscribing to new topics
     client.on_message = on_message
-    client.on_publish = on_publish # Can comment out to not print when publishing to topics
+    #client.on_publish = on_publish # Can comment out to not print when publishing to topics
 
-    lobby_name   = input("Input a lobby name: ")
-    # team_name_1   = input("Input Team 1 name: ")
-    # player_1a     = input("Input team " + team_name_1 + "'s player 1 name: ")
-    # player_1b     = input("Input team " + team_name_1 + "'s player 2 name: ")
-    # team_name_2   = input("Input Team 2 name: ")
-    # player_2a     = input("Input team " + team_name_2 + "'s player 1 name: ")
-    # player_2b     = input("Input team " + team_name_2 + "'s player 2 name: ")
+    #player_name = input("Input your name: ") #challenge 2
+    #lobby_name  = "Challenge3Lobby"
+    #4 players, 2 teams
+    teamRock = "TeamRock"
+    teamRock_playerA    = "ABBY"
+    teamRock_playerB    = "YBBA"
+    teamPaper = "TeamPaper"
+    teamPaper_playerC   = "SUHAYB"
+    teamPaper_playerD    = "BYAHUS"
+
 
     client.subscribe(f"games/{lobby_name}/lobby")
     client.subscribe(f'games/{lobby_name}/+/game_state')
     client.subscribe(f'games/{lobby_name}/scores')
 
-    # Two teams of two
-
     client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
-                                           'team_name'   : 'TeamA',
-                                           'player_name' : 'a'}))
-                                           
-    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
-                                           'team_name'   : 'TeamA',
-                                           'player_name' : 'b'}))
-
-    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
-                                           'team_name'   : 'TeamB',
-                                           'player_name' : 'aa'}))
+                                           'team_name'   : teamRock,
+                                           'player_name' : teamRock_playerA}))
     
     client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
-                                           'team_name'   : 'TeamB',
-                                           'player_name' : 'bb'}))
+                                           'team_name'   : teamRock,
+                                           'player_name' : teamRock_playerB}))
+    
+    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
+                                           'team_name'   : teamPaper,
+                                           'player_name' : teamPaper_playerC}))
+    
+    client.publish("new_game", json.dumps({'lobby_name'  : lobby_name,
+                                           'team_name'   : teamPaper,
+                                           'player_name' : teamPaper_playerD}))
 
+    client.publish(f"games/{lobby_name}/start", "START") #start the games, now that all 4 players have been added
+    
     time.sleep(1) # Wait a second to resolve game start
+    while(isGameValid):
+        player_move = moveGen() #all move same direction for now
+        client.publish(f"games/{lobby_name}/{teamRock_playerA}/move", str(player_move))
+        time.sleep(1) # Wait a second for message delivery integrity, this may be able to be faster without issue tbh
 
-    client.publish(f"games/{lobby_name}/start", "START")
+        client.publish(f"games/{lobby_name}/{teamRock_playerB}/move", str(player_move))
+        time.sleep(1) # Wait a second for message delivery integrity
 
-    i = 1 # Initalize variable that will help us cycle through each player
+        client.publish(f"games/{lobby_name}/{teamPaper_playerC}/move", str(player_move))
+        time.sleep(1) # Wait a second for message delivery integrity
 
-    while(isGameValid): # currently, an infinite loop TODO: add function to check if game is still valid on GameClient end
-        if i > 4: i = 1 # reset to the first player when player 4 is finished
-        if i == 1: current_player = 'a' # Set which player we are currently on based on counter
-        if i == 2: current_player = 'b'
-        if i == 3: current_player = 'aa'
-        if i == 4: current_player = 'bb'
+        client.publish(f"games/{lobby_name}/{teamPaper_playerD}/move", str(player_move))
+        time.sleep(1) # Wait a second for message delivery integrity
 
-        player_move = input(current_player + ", make your move: ") # take in move
-        client.publish("games/{lobby_name}/{current_player}/move", player_move) # publish this move to desired player
+        
 
-        i = i + 1 # move to next player
 
-    client.publish("games/{lobby_name}/start", "STOP") # Stop the game. Currently, will never reach this stage
+    #client.publish("games/{lobby_name}/start", "STOP") # Stop the game. Currently, will never reach this stage
 
-    client.loop_forever()
+    client.loop_stop() #why was this loop_start()? perhaps required. Changed to loop_stop() -suhayb 4/12 5pm 

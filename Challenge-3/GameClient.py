@@ -11,8 +11,6 @@ from InputTypes import NewPlayer
 from game import Game
 from moveset import Moveset
 
-isGameStarted = False
-
 # setting callbacks for different events to see if it works, print the message etc.
 def on_connect(client, userdata, flags, rc, properties=None):
     """
@@ -62,9 +60,6 @@ def on_message(client, userdata, msg):
     # Validate it is input we can deal with
     if topic_list[-1] in dispatch.keys(): 
         dispatch[topic_list[-1]](client, topic_list, msg.payload)
-    
-    if msg.topic == "games/{lobby_name}/start" and str(msg.payload) == "START": isGameStarted = True
-    print(game.map)
 
 # Dispatched function, adds player to a lobby & team
 def add_player(client, topic_list, msg_payload):
@@ -104,9 +99,11 @@ move_to_Moveset = {
 
 # Dispatched Function: handles player movement commands
 def player_move(client, topic_list, msg_payload):
+    print("In player_move")
     lobby_name = topic_list[1]
     player_name = topic_list[2]
     if lobby_name in client.team_dict.keys():
+        print("Attempting to calculate move...")
         try:
             new_move = msg_payload.decode()
 
@@ -121,7 +118,7 @@ def player_move(client, topic_list, msg_payload):
                 # Publish player states after all movement is resolved
                 for player, _ in client.move_dict[lobby_name].values():
                     client.publish(f'games/{lobby_name}/{player}/game_state', json.dumps(game.getGameData(player)))
-
+                
                 # Clear move list
                 client.move_dict[lobby_name].clear()
                 print(game.map)
@@ -196,7 +193,7 @@ if __name__ == '__main__':
     # setting callbacks, use separate functions like above for better visibility
     client.on_subscribe = on_subscribe # Can comment out to not print when subscribing to new topics
     client.on_message = on_message
-    client.on_publish = on_publish # Can comment out to not print when publishing to topics
+    #client.on_publish = on_publish # Can comment out to not print when publishing to topics
     
     # custom dictionary to track players
     client.team_dict = {} # Keeps tracks of players before a game starts {'lobby_name' : {'team_name' : [player_name, ...]}}
@@ -206,9 +203,5 @@ if __name__ == '__main__':
     client.subscribe("new_game")
     client.subscribe('games/+/start')
     client.subscribe('games/+/+/move')
-    
-    if isGameStarted == True: 
-        print("hih")
-        print(game.map)
 
     client.loop_forever()
