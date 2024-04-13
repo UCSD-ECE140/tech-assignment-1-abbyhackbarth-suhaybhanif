@@ -19,7 +19,6 @@ def getDefaultWallChoices():
         wall.append((row,8))
     return wall
 
-
 class Map:
     COIN_MIN_RATIO = 0.1
     COIN_MAX_RATIO = 0.2
@@ -38,7 +37,6 @@ class Map:
         self.wallChoices = getDefaultWallChoices() if wallChoices is None else wallChoices
 
         self.__fillMap(playersList)
-
 
     @property
     def numCoins(self):
@@ -123,7 +121,6 @@ class Map:
             if self.__map[x][y] is None:
                 self.__map[x][y] = obj
                 return x, y
-
 
 if __name__ == '__main__':
     m = Map(10, 10, [Player('Charles', None), Player('James', None)])

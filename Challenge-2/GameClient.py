@@ -23,7 +23,6 @@ def on_connect(client, userdata, flags, rc, properties=None):
     """
     print("CONNACK received with code %s." % rc)
 
-
 # with this callback you can see if your publish was successful
 def on_publish(client, userdata, mid, properties=None):
     """
@@ -34,7 +33,6 @@ def on_publish(client, userdata, mid, properties=None):
         :param properties: can be used in MQTTv5, but is optional
     """
     print("mid: " + str(mid))
-
 
 # print which topic was subscribed to
 def on_subscribe(client, userdata, mid, granted_qos, properties=None):
@@ -47,7 +45,6 @@ def on_subscribe(client, userdata, mid, granted_qos, properties=None):
         :param properties: can be used in MQTTv5, but is optional
     """
     print("Subscribed: " + str(mid) + " " + str(granted_qos))
-
 
 # triggered on message from subscription
 def on_message(client, userdata, msg):
@@ -63,8 +60,6 @@ def on_message(client, userdata, msg):
     # Validate it is input we can deal with
     if topic_list[-1] in dispatch.keys(): 
         dispatch[topic_list[-1]](client, topic_list, msg.payload)
-
-
 
 # Dispatched function, adds player to a lobby & team
 def add_player(client, topic_list, msg_payload):
@@ -87,7 +82,6 @@ def add_player(client, topic_list, msg_payload):
 
     print(f'Added Player: {player.player_name} to Team: {player.team_name}')
 
-
 def add_team(client, player):
     # If team not in lobby, make new team and start a player list for the team
     if player.team_name not in client.team_dict[player.lobby_name].keys():
@@ -105,9 +99,11 @@ move_to_Moveset = {
 
 # Dispatched Function: handles player movement commands
 def player_move(client, topic_list, msg_payload):
+    print("In player_move")
     lobby_name = topic_list[1]
     player_name = topic_list[2]
     if lobby_name in client.team_dict.keys():
+        print("Attempting to calculate move...")
         try:
             new_move = msg_payload.decode()
 
@@ -122,7 +118,7 @@ def player_move(client, topic_list, msg_payload):
                 # Publish player states after all movement is resolved
                 for player, _ in client.move_dict[lobby_name].values():
                     client.publish(f'games/{lobby_name}/{player}/game_state', json.dumps(game.getGameData(player)))
-
+                
                 # Clear move list
                 client.move_dict[lobby_name].clear()
                 print(game.map)
@@ -139,7 +135,6 @@ def player_move(client, topic_list, msg_payload):
             publish_error_to_lobby(client, lobby_name, e.__str__)
     else:
         publish_error_to_lobby(client, lobby_name, "Lobby name not found.")
-
 
 # Dispatched function: Instantiates Game object
 def start_game(client, topic_list, msg_payload):
@@ -159,7 +154,6 @@ def start_game(client, topic_list, msg_payload):
                 for player in game.all_players.keys():
                     client.publish(f'games/{lobby_name}/{player}/game_state', json.dumps(game.getGameData(player)))
 
-
                 print(game.map)
     elif isinstance(msg_payload, bytes) and msg_payload.decode() == "STOP":
         publish_to_lobby(client, lobby_name, "Game Over: Game has been stopped")
@@ -167,21 +161,17 @@ def start_game(client, topic_list, msg_payload):
         client.move_dict.pop(lobby_name, None)
         client.game_dict.pop(lobby_name, None)
 
-
 def publish_error_to_lobby(client, lobby_name, error):
     publish_to_lobby(client, lobby_name, f"Error: {error}")
 
-
 def publish_to_lobby(client, lobby_name, msg):
     client.publish(f"games/{lobby_name}/lobby", msg)
-
 
 dispatch = {
     'new_game' : add_player,
     'move' : player_move,
     'start' : start_game,
 }
-
 
 if __name__ == '__main__':
     load_dotenv(dotenv_path='./credentials.env')
@@ -203,7 +193,7 @@ if __name__ == '__main__':
     # setting callbacks, use separate functions like above for better visibility
     client.on_subscribe = on_subscribe # Can comment out to not print when subscribing to new topics
     client.on_message = on_message
-    client.on_publish = on_publish # Can comment out to not print when publishing to topics
+    #client.on_publish = on_publish # Can comment out to not print when publishing to topics
     
     # custom dictionary to track players
     client.team_dict = {} # Keeps tracks of players before a game starts {'lobby_name' : {'team_name' : [player_name, ...]}}

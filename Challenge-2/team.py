@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from player import Player
 
-
 class Team:
     def __init__(self, teamName: str):
         assert isinstance(teamName, str)

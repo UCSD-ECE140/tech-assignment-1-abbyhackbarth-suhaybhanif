@@ -9,7 +9,6 @@ from pydantic import ValidationError
 from InputTypes import NewPlayer, Move
 from game import Game
 
-
 # Global Variables
 load_dotenv(dotenv_path='./credentials.env')
 
@@ -17,7 +16,6 @@ broker_address = os.environ.get('BROKER_ADDRESS')
 broker_port = int(os.environ.get('BROKER_PORT'))
 username = os.environ.get('USERNAME')
 password = os.environ.get('PASSWORD')
-
 
 def on_message(self, client, userdata, msg):
         """
@@ -27,7 +25,6 @@ def on_message(self, client, userdata, msg):
         :param msg: the message with topic and payload
         """
         pass
-
 
 class GameInstanceManager():
     def __init__(self, lobby_name: str, team_dict: dict[str,list[str]]):
@@ -56,9 +53,6 @@ class GameInstanceManager():
     def __del__(self):
         self.client.loop_stop()
         self.client.disconnect()
-
-
-    
 
 if __name__ == "__main__":
     game = GameInstanceManager()
