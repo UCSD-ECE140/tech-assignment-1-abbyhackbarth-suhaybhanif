@@ -134,20 +134,20 @@ if __name__ == '__main__':
     while(isGameValid):
         player_move = moveGen() #all move same direction for now
         client.publish(f"games/{lobby_name}/{teamRock_playerA}/move", str(player_move))
-        time.sleep(1) # Wait a second for message delivery integrity, this may be able to be faster without issue tbh
+        time.sleep(.1) # Wait a second for message delivery integrity, this may be able to be faster without issue tbh
 
         client.publish(f"games/{lobby_name}/{teamRock_playerB}/move", str(player_move))
-        time.sleep(1) # Wait a second for message delivery integrity
+        time.sleep(.1) # Wait a second for message delivery integrity
 
         client.publish(f"games/{lobby_name}/{teamPaper_playerC}/move", str(player_move))
-        time.sleep(1) # Wait a second for message delivery integrity
+        time.sleep(.1) # Wait a second for message delivery integrity
 
         client.publish(f"games/{lobby_name}/{teamPaper_playerD}/move", str(player_move))
-        time.sleep(1) # Wait a second for message delivery integrity
+        time.sleep(.1) # Wait a second for message delivery integrity
 
         
 
 
-    #client.publish("games/{lobby_name}/start", "STOP") # Stop the game. Currently, will never reach this stage
+    if (isGameValid == False): client.publish(f"games/{lobby_name}/start", "STOP") # Stop the game. once winning condition met
 
     client.loop_stop() #why was this loop_start()? perhaps required. Changed to loop_stop() -suhayb 4/12 5pm 

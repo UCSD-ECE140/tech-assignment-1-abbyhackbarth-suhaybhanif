@@ -60,6 +60,10 @@ def on_message(client, userdata, msg):
     # Validate it is input we can deal with
     if topic_list[-1] in dispatch.keys(): 
         dispatch[topic_list[-1]](client, topic_list, msg.payload)
+    
+    if isinstance(msg.payload, bytes) and "STOP" in msg.payload.decode(): #if STOP message is sent out, then disconnct. we might not need this -Suhayb
+        print("Game is Over, Lobby no longer exists")
+        client.disconnect()
 
 # Dispatched function, adds player to a lobby & team
 def add_player(client, topic_list, msg_payload):
@@ -121,6 +125,7 @@ def player_move(client, topic_list, msg_payload):
                 
                 # Clear move list
                 client.move_dict[lobby_name].clear()
+                os.system("cls") #clear the terminal so map moves are easier to see -suhayb 4/14 11am. Delete for submission
                 print(game.map)
                 client.publish(f'games/{lobby_name}/scores', json.dumps(game.getScores()))
                 if game.gameOver():
